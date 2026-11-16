@@ -1,0 +1,27 @@
+model Model
+	culture: en-US
+	defaultPowerBIDataSourceVersion: powerBI_V3
+	sourceQueryCulture: en-US
+	dataAccessOptions
+		fastCombine
+		legacyRedirects
+		returnErrorValuesAsNull
+
+annotation PBI_QueryOrder = ["teamUserLookup","Teams_Metrics"]
+
+annotation __PBI_TimeIntelligenceEnabled = 1
+
+annotation PBI_ProTooling = ["DevMode"]
+
+ref table DateTableTemplate_c7704f47-6bde-427e-a456-60491a5a5cb2
+ref table teamUserLookup
+ref table 'Normal Distribution Table'
+ref table 'Normal Distribution Scrn Shr'
+ref table Teams_Metrics
+ref table LocalDateTable_eaa1745d-2688-4caf-9d1d-3f2391e76e3f
+ref table LocalDateTable_7e11c56e-4f84-474b-944a-1724af82852b
+ref table 'Normal Distribution Meetings'
+ref table LocalDateTable_171eb3cd-3931-4f2e-ad6f-93a804c66e01
+
+ref cultureInfo en-US
+

@@ -1,0 +1,83 @@
+table 'Normal Distribution Scrn Shr'
+	lineageTag: 894467ea-cca4-4702-a1b7-e338c088a27b
+
+	measure 'f(x) scrn shr' = ```
+			
+			 CALCULATE(
+			    EXP((VALUES('Normal Distribution Scrn Shr'[X])-'Teams_Metrics'[Mean_ScreenShr])^2/(2*'Teams_Metrics'[stdDev_ScreenShr]^2)*-1)/(SQRT(2*pi())*'Teams_Metrics'[stdDev_ScreenShr])
+			        ,ALLEXCEPT('Teams_Metrics', 'Teams_Metrics'[ROLE], 'Teams_Metrics'[DIVISION]
+			    )
+			 )
+			```
+		lineageTag: 4c5c6103-bd5c-4370-8125-7750806b876f
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure Mean_ScrnShr_INDIC =
+			
+			CALCULATE(
+			    AVERAGE( 'Teams_Metrics'[ScreenShare_hrs])
+			    ,ALLEXCEPT('Teams_Metrics','Teams_Metrics'[USER], 'Teams_Metrics'[ROLE], 'Teams_Metrics'[DIVISION])
+			)
+		formatString: 0.0
+		lineageTag: 532ccf0e-bbff-4cff-8468-d6dc339e1f1f
+
+	measure Mean_ScrnShr_ROLE =
+			
+			CALCULATE(
+			    AVERAGE( 'Teams_Metrics'[ScreenShare_hrs])
+			    ,ALLEXCEPT('Teams_Metrics', 'Teams_Metrics'[ROLE], 'Teams_Metrics'[DIVISION])
+			)
+		formatString: 0.0
+		lineageTag: 420459f2-8b8e-4f64-b452-a0a2957634b5
+
+	measure Status_ScreenShare =
+			
+			var X_status = CALCULATE(
+			    AVERAGE( 'Teams_Metrics'[ScreenShare_hrs])
+			    ,ALLEXCEPT('Teams_Metrics','Teams_Metrics'[USER], 'Teams_Metrics'[ROLE], 'Teams_Metrics'[DIVISION])
+			)
+			
+			var Median_status = CALCULATE(
+			    AVERAGE( 'Teams_Metrics'[ScreenShare_hrs])
+			    ,ALLEXCEPT('Teams_Metrics', 'Teams_Metrics'[ROLE], 'Teams_Metrics'[DIVISION])
+			)
+			RETURN
+			    IF(X_status>=Median_status,  UNICHAR(11165), UNICHAR(11167))
+		lineageTag: 3e528ced-7b28-4f71-8aab-4fd610af453c
+
+	column X
+		formatString: 0
+		lineageTag: 7fe5e905-a590-42db-9b4d-e981ba4dfe45
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [X]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'z scr shr' = ('Normal Distribution Scrn Shr'[X]-'Teams_Metrics'[Mean_ScreenShr]/'Teams_Metrics'[stdDev_ScreenShr])
+		lineageTag: 875398f3-66aa-4064-8c8d-9ce214dfde3f
+		summarizeBy: sum
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column Hours = ([X]/60)/60
+		lineageTag: 6a806067-e813-4985-bcd5-8dce1fb9e9df
+		summarizeBy: sum
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	partition 'Normal Distribution Scrn Shr' = calculated
+		mode: import
+		source =
+				
+				var minvalue = CALCULATE(FLOOR([_B_X-3a_scrnShr],1), ALLEXCEPT('Teams_Metrics', 'Teams_Metrics'[ROLE], 'Teams_Metrics'[DIVISION]))
+				VAR MAXVALUE = CALCULATE(CEILING([_B_X+3a+scrnShar],1), ALLEXCEPT('Teams_Metrics', 'Teams_Metrics'[ROLE], 'Teams_Metrics'[DIVISION]))
+				return SELECTCOLUMNS(CALENDAR(minvalue,MAXVALUE),"X",int([Date]))
+
+	annotation PBI_Id = da0a9a79410642198940e8b5b419c7a9
+

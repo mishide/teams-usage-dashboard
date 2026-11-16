@@ -1,0 +1,86 @@
+{
+  "version": "1.1.0",
+  "diagrams": [
+    {
+      "ordinal": 0,
+      "scrollPosition": {
+        "x": 0,
+        "y": 0
+      },
+      "nodes": [
+        {
+          "location": {
+            "x": 251.36986301369862,
+            "y": 0
+          },
+          "nodeIndex": "teamUserLookup",
+          "nodeLineageTag": "be5ed3b0-6370-4eba-956d-4dd80456985f",
+          "size": {
+            "height": 152,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 704.58904109589048,
+            "y": 323.56763698630135
+          },
+          "nodeIndex": "Normal Distribution Table",
+          "nodeLineageTag": "a2bd42f3-2a96-469f-9fff-0a9dd3786d60",
+          "size": {
+            "height": 200,
+            "width": 327.49315068493138
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 715.64383561643842,
+            "y": 551.53681506849307
+          },
+          "nodeIndex": "Normal Distribution Scrn Shr",
+          "nodeLineageTag": "894467ea-cca4-4702-a1b7-e338c088a27b",
+          "size": {
+            "height": 200,
+            "width": 339.82191780821915
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 243.23287671232873,
+            "y": 265.57962328767121
+          },
+          "nodeIndex": "Teams_Metrics",
+          "nodeLineageTag": "20685ede-b7a8-4b49-b67f-557766ac16bd",
+          "size": {
+            "height": 300,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 854.095890410959,
+            "y": 275.76840753424653
+          },
+          "nodeIndex": "Normal Distribution Meetings",
+          "size": {
+            "height": 200,
+            "width": 234
+          },
+          "zIndex": 0
+        }
+      ],
+      "name": "All tables",
+      "zoomValue": 97.333333333333343,
+      "pinKeyFieldsToTop": false,
+      "showExtraHeaderInfo": false,
+      "hideKeyFieldsWhenCollapsed": false,
+      "tablesLocked": false
+    }
+  ],
+  "selectedDiagram": "All tables",
+  "defaultDiagram": "All tables"
+}

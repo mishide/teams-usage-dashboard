@@ -1,0 +1,58 @@
+table 'Normal Distribution Meetings'
+	lineageTag: ae4ad899-1c3a-4d7f-9da6-3b6e4cde330d
+
+	measure 'f(x) meetings' = ```
+			
+			 CALCULATE(
+			    EXP((VALUES('Normal Distribution Meetings'[X])-'Teams_Metrics'[Mean_Meetings])^2/(2*'Teams_Metrics'[stdDev_Meetings]^2)*-1)/(SQRT(2*pi())*'Teams_Metrics'[stdDev_Meetings])
+			        ,ALLEXCEPT('Teams_Metrics', 'Teams_Metrics'[ROLE], 'Teams_Metrics'[DIVISION]
+			    )
+			 )
+			```
+		lineageTag: 42ab608e-247e-4d6e-9e51-6471b7f7daa1
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure Mean_Meetings_INDIC =
+			
+			CALCULATE(
+			    AVERAGE( 'Teams_Metrics'[Meeting Count])
+			    ,ALLEXCEPT('Teams_Metrics','Teams_Metrics'[USER], 'Teams_Metrics'[ROLE], 'Teams_Metrics'[DIVISION])
+			)
+		lineageTag: 4d38b6f4-4a82-4dd8-ac04-f662f254209e
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure Mean_Meetings_ROLE =
+			
+			CALCULATE(
+			    AVERAGE( 'Teams_Metrics'[Meeting Count])
+			    ,ALLEXCEPT('Teams_Metrics', 'Teams_Metrics'[ROLE], 'Teams_Metrics'[DIVISION])
+			)
+		lineageTag: 0d90ac8b-7b6f-40ce-8928-8163f0a8e312
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column X
+		lineageTag: fedff61a-d518-40bf-8ab9-409413dec613
+		isNameInferred
+		sourceColumn: [X]
+
+	column 'z scr shr' = ('Normal Distribution Meetings'[X]-'Teams_Metrics'[Mean_Meetings]/'Teams_Metrics'[stdDev_Meetings])
+		lineageTag: f9c40fa3-1ad6-440c-b4f5-137296807d02
+		summarizeBy: sum
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	partition 'Normal Distribution Meetings' = calculated
+		mode: import
+		source =
+				
+				var minvalue = CALCULATE(FLOOR([_B_X-3a_Meetings],1), ALLEXCEPT('Teams_Metrics', 'Teams_Metrics'[ROLE], 'Teams_Metrics'[DIVISION]))
+				VAR MAXVALUE = CALCULATE(CEILING([_B_X+3a_meetings],1), ALLEXCEPT('Teams_Metrics', 'Teams_Metrics'[ROLE], 'Teams_Metrics'[DIVISION]))
+				return SELECTCOLUMNS(CALENDAR(minvalue,MAXVALUE),"X",int([Date]))
+
+	annotation PBI_Id = 089a0728d68d4ef1966ecd97a8ac0f5a
+

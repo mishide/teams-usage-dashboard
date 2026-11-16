@@ -1,0 +1,388 @@
+table Teams_Metrics
+	lineageTag: 20685ede-b7a8-4b49-b67f-557766ac16bd
+
+	measure _B_X-3a = [Mean_CallCount]-3*[stdDev_CallCnt]
+		lineageTag: 677fbb48-c36d-46e1-8893-c225862dfead
+
+	measure _B_X-3a_scrnShr = [Mean_ScreenShr]-3*[stdDev_ScreenShr]
+		lineageTag: d2ff33f2-3340-4c38-b6b5-bfdbbc9bd3ea
+
+	measure _B_X+3a = [Mean_CallCount]+3*[stdDev_CallCnt]
+		lineageTag: 9d1ec901-98bd-40d7-8c75-241f63eb88cd
+
+	measure _B_X+3a+scrnShar = [Mean_ScreenShr]+3*[stdDev_ScreenShr]
+		lineageTag: 9d828f70-897a-4b64-813f-cef230520b0d
+
+	measure Mean_ScreenShr = CALCULATE( AVERAGE('Teams_Metrics'[ScreenShare_hrs]), ALLEXCEPT('Teams_Metrics', 'Teams_Metrics'[ROLE], 'Teams_Metrics'[DIVISION]))
+		lineageTag: 469b6538-708b-4e74-aa3e-f54feef5465c
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure Mean_CallCount =
+			
+			CALCULATE( AVERAGE('Teams_Metrics'[Call Count]), ALLEXCEPT('Teams_Metrics', 'Teams_Metrics'[ROLE], 'Teams_Metrics'[DIVISION]))
+		lineageTag: 79bb1605-4b1e-49a3-8919-e3915aabbf9a
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure stdDev_CallCnt =
+			CALCULATE(
+			                     STDEV.P('Teams_Metrics'[Call Count]),
+			                     ALLEXCEPT('Teams_Metrics','Teams_Metrics'[ROLE], 'Teams_Metrics'[DIVISION]
+			                     )
+			)
+		lineageTag: 45fece9e-935f-44df-8d65-bfd17ece1faf
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure stdDev_ScreenShr =
+			CALCULATE(
+			                     STDEV.P('Teams_Metrics'[ScreenShare_hrs]),
+			                     ALLEXCEPT('Teams_Metrics','Teams_Metrics'[ROLE], 'Teams_Metrics'[DIVISION]
+			                     )
+			)
+		lineageTag: fc31626f-1ce8-416e-9f6d-217085065d40
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure Mean_CallCount_IND =
+			
+			CALCULATE(
+			    AVERAGE( 'Teams_Metrics'[Call Count])
+			    ,ALLSELECTED('teamUserLookup'[User_Principal_Name])
+			)
+		lineageTag: 7a22b8e4-b047-4a27-93da-09c6a9011264
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure _B_X-3a_ = [Mean_ScreenShr]-3*[stdDev_ScreenShr]
+		lineageTag: 421a81b2-f7fd-4d19-b9fc-ea99c43a3cb2
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure _B_X-3a_Meetings = [Mean_Meetings]-3*[stdDev_Meetings]
+		lineageTag: 388e26e7-81a9-40e2-9893-eab9627437ec
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure _B_X+3a_Meetings = [Mean_Meetings]+3*[stdDev_Meetings]
+		lineageTag: 35cef44f-0e35-47ec-8882-ec9e620af848
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure Mean_Meetings = CALCULATE( AVERAGE('Teams_Metrics'[Meeting Count]), ALLEXCEPT('Teams_Metrics', 'Teams_Metrics'[ROLE], 'Teams_Metrics'[DIVISION]))
+		lineageTag: 995660d9-e4f6-4d58-88ea-8d45b7c72983
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure stdDev_Meetings =
+			CALCULATE(
+			                     STDEV.P('Teams_Metrics'[Meeting Count]),
+			                     ALLEXCEPT('Teams_Metrics','Teams_Metrics'[ROLE], 'Teams_Metrics'[DIVISION]
+			                     )
+			)
+		lineageTag: dc785d8d-d717-4e84-89a6-7fd0a5e73fd4
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'Report Refresh Date'
+		dataType: dateTime
+		formatString: Short Date
+		lineageTag: 58da0658-cb77-4a46-89b3-76626b58adaf
+		summarizeBy: none
+		sourceColumn: Report Refresh Date
+
+		variation Variation
+			isDefault
+			relationship: 6c6513af-de47-496d-bbda-df9ce8039dc9
+			defaultHierarchy: LocalDateTable_eaa1745d-2688-4caf-9d1d-3f2391e76e3f.'Date Hierarchy'
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column 'User Id'
+		dataType: string
+		lineageTag: a1d1fe17-a574-43aa-b422-6648c1e4790a
+		summarizeBy: none
+		sourceColumn: User Id
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'User Principal Name'
+		dataType: string
+		lineageTag: 09b0c95c-3a01-45b8-900e-d1d9fe120795
+		summarizeBy: none
+		sourceColumn: User Principal Name
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Last Activity Date'
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: e03fcfe1-65dd-44e9-a69e-7b4b898b3364
+		summarizeBy: none
+		sourceColumn: Last Activity Date
+
+		variation Variation
+			isDefault
+			relationship: e89eca34-4ea3-48f4-8ee1-c2f2c32e6025
+			defaultHierarchy: LocalDateTable_7e11c56e-4f84-474b-944a-1724af82852b.'Date Hierarchy'
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column 'Private Chat Message Count'
+		dataType: int64
+		formatString: 0
+		lineageTag: 7f289710-a9de-40b7-b291-f8737c977576
+		summarizeBy: sum
+		sourceColumn: Private Chat Message Count
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Call Count'
+		dataType: int64
+		formatString: 0
+		lineageTag: a8aea113-146e-47a4-922d-4b61df748bf3
+		summarizeBy: sum
+		sourceColumn: Call Count
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Meeting Count'
+		dataType: int64
+		formatString: 0
+		lineageTag: 18d11329-9793-401c-a3d0-4f1e35a603eb
+		summarizeBy: sum
+		sourceColumn: Meeting Count
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Meetings Organized Count'
+		dataType: int64
+		formatString: 0
+		lineageTag: 9625e1ec-dfcf-4132-b621-bd0fb950185e
+		summarizeBy: sum
+		sourceColumn: Meetings Organized Count
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Ad Hoc Meetings Organized Count'
+		dataType: int64
+		formatString: 0
+		lineageTag: 19f0ccf5-a9dc-44e8-8b93-3080826e596f
+		summarizeBy: sum
+		sourceColumn: Ad Hoc Meetings Organized Count
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Ad Hoc Meetings Attended Count'
+		dataType: int64
+		formatString: 0
+		lineageTag: 41fcdcdc-5869-46d4-9329-e9ffe9dc0d2b
+		summarizeBy: sum
+		sourceColumn: Ad Hoc Meetings Attended Count
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Scheduled One-time Meetings Organized Count'
+		dataType: int64
+		formatString: 0
+		lineageTag: f35ec4c4-040a-4417-b67d-7131934e92e1
+		summarizeBy: sum
+		sourceColumn: Scheduled One-time Meetings Organized Count
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Scheduled One-time Meetings Attended Count'
+		dataType: int64
+		formatString: 0
+		lineageTag: 76a2070b-d14c-443d-96ad-d71629f298af
+		summarizeBy: sum
+		sourceColumn: Scheduled One-time Meetings Attended Count
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Scheduled Recurring Meetings Organized Count'
+		dataType: int64
+		formatString: 0
+		lineageTag: dd606e00-23ed-44b6-92be-804412aa63e5
+		summarizeBy: sum
+		sourceColumn: Scheduled Recurring Meetings Organized Count
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Audio Duration In Seconds'
+		dataType: int64
+		formatString: 0
+		lineageTag: 87971c3b-16f5-4809-ab9b-f3d422b778a7
+		summarizeBy: sum
+		sourceColumn: Audio Duration In Seconds
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Video Duration In Seconds'
+		dataType: int64
+		formatString: 0
+		lineageTag: a0936221-3651-411e-b043-573a4db6537b
+		summarizeBy: sum
+		sourceColumn: Video Duration In Seconds
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Screen Share Duration In Seconds'
+		dataType: int64
+		formatString: 0
+		lineageTag: 15545d80-7c43-444c-9da8-8b2cd49cedac
+		summarizeBy: sum
+		sourceColumn: Screen Share Duration In Seconds
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Report Period'
+		dataType: int64
+		formatString: 0
+		lineageTag: f31f83f9-4c88-4023-9db0-2fc1bb1fca23
+		summarizeBy: sum
+		sourceColumn: Report Period
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Team Chat Message Count'
+		dataType: int64
+		formatString: 0
+		lineageTag: 329c6f5e-2250-4021-9ec3-231d5ecde454
+		summarizeBy: sum
+		sourceColumn: Team Chat Message Count
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Meetings Attended Count'
+		dataType: int64
+		formatString: 0
+		lineageTag: 0a662cab-fda7-4f75-b8a5-b3467c0a676f
+		summarizeBy: sum
+		sourceColumn: Meetings Attended Count
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Scheduled Recurring Meetings Attended Count'
+		dataType: int64
+		formatString: 0
+		lineageTag: 6120f5df-6bce-4421-b904-f5973502b341
+		summarizeBy: sum
+		sourceColumn: Scheduled Recurring Meetings Attended Count
+
+		annotation SummarizationSetBy = Automatic
+
+	column ROLE
+		dataType: string
+		lineageTag: d010b4dc-2dd8-48c0-9eba-1b77285e29e0
+		summarizeBy: none
+		sourceColumn: ROLE
+
+		annotation SummarizationSetBy = Automatic
+
+	column DIVISION
+		dataType: string
+		lineageTag: 4f0e924d-9ced-4ede-a8c1-61a4e51f8670
+		summarizeBy: none
+		sourceColumn: DIVISION
+
+		annotation SummarizationSetBy = Automatic
+
+	column TITLE
+		dataType: string
+		lineageTag: f3583cc2-6b43-49dd-96a3-2b92df50171a
+		summarizeBy: none
+		sourceColumn: TITLE
+
+		annotation SummarizationSetBy = Automatic
+
+	column USER
+		dataType: string
+		lineageTag: ab1d4408-3603-407b-8d5a-10370ce92fc4
+		summarizeBy: none
+		sourceColumn: USER
+
+		annotation SummarizationSetBy = Automatic
+
+	column ScreenShare_hrs
+		dataType: double
+		lineageTag: 5f5d92d8-bb33-425b-8bd4-2913f7eaa4db
+		summarizeBy: sum
+		sourceColumn: ScreenShare_hrs
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column start_date
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: 1c0a8883-8ffc-4ae3-8bee-e39cafc2ef7a
+		summarizeBy: none
+		sourceColumn: start_date
+
+		variation Variation
+			isDefault
+			relationship: 5a2b1297-f34a-4ec4-8fca-b1c6030e416d
+			defaultHierarchy: LocalDateTable_171eb3cd-3931-4f2e-ad6f-93a804c66e01.'Date Hierarchy'
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column 'Report Date Range'
+		dataType: string
+		lineageTag: fe82abac-91e6-4c37-b8b5-dad8d95322a9
+		summarizeBy: none
+		sourceColumn: Report Date Range
+
+		annotation SummarizationSetBy = Automatic
+
+	column __Status_ScreenShare
+		dataType: string
+		lineageTag: 918078d2-de10-40bc-b061-01a3609f4878
+		summarizeBy: none
+		sourceColumn: __Status_ScreenShare
+
+		annotation SummarizationSetBy = Automatic
+
+	column __Status_Calls
+		dataType: string
+		lineageTag: 62f99bde-ae44-48ea-8186-faf87a238433
+		summarizeBy: none
+		sourceColumn: __Status_Calls
+
+		annotation SummarizationSetBy = Automatic
+
+	column __Status_Meetings
+		dataType: string
+		lineageTag: 6c305be5-4a5c-4a65-8ac0-f389f7abdd02
+		summarizeBy: none
+		sourceColumn: __Status_Meetings
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Teams_Metrics = m
+		mode: import
+		source =
+				let
+				    Source = Csv.Document(
+				        File.Contents("C:\Portfolio\Data\Teams_Metrics.csv"),
+				        [Delimiter=",", Columns=33, Encoding=1252, QuoteStyle=QuoteStyle.None]
+				    ),
+				    #"Imported CSV" = Source,
+				    #"Promoted Headers" = Table.PromoteHeaders(#"Imported CSV", [PromoteAllScalars=true]),
+				    #"Changed Type" = Table.TransformColumnTypes(#"Promoted Headers",{{"Report Refresh Date", type date}, {"Last Activity Date", type date}, {"User Id", type text}, {"User Principal Name", type text}, {"Private Chat Message Count", Int64.Type}, {"Call Count", Int64.Type}, {"Meeting Count", Int64.Type}, {"Meetings Organized Count", Int64.Type}, {"Ad Hoc Meetings Organized Count", Int64.Type}, {"Ad Hoc Meetings Attended Count", Int64.Type}, {"Scheduled One-time Meetings Organized Count", Int64.Type}, {"Scheduled One-time Meetings Attended Count", Int64.Type}, {"Scheduled Recurring Meetings Organized Count", Int64.Type}, {"Audio Duration In Seconds", Int64.Type}, {"Video Duration In Seconds", Int64.Type}, {"Screen Share Duration In Seconds", Int64.Type}, {"Report Period", Int64.Type}, {"Team Chat Message Count", Int64.Type}, {"Meetings Attended Count", Int64.Type}, {"Scheduled Recurring Meetings Attended Count", Int64.Type}, {"ScreenShare_hrs", type number}, {"ROLE", type text}, {"DIVISION", type text}, {"TITLE", type text}, {"start_date", type date}, {"Report Date Range", type text}, {"USER", type text}, {"__Status_ScreenShare", type text}, {"__Status_Calls", type text}, {"__Status_Meetings", type text}}),
+				    #"Removed Columns" = Table.RemoveColumns(#"Changed Type",{"", "_1", "_2"})
+				in
+				    #"Removed Columns"
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

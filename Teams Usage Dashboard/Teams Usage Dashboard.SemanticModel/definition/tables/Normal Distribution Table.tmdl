@@ -1,0 +1,62 @@
+table 'Normal Distribution Table'
+	lineageTag: a2bd42f3-2a96-469f-9fff-0a9dd3786d60
+
+	measure f(x) = ```
+			
+			 CALCULATE(
+			    EXP((VALUES('Normal Distribution Table'[X])-'Teams_Metrics'[Mean_CallCount])^2/(2*'Teams_Metrics'[stdDev_CallCnt]^2)*-1)/(SQRT(2*pi())*'Teams_Metrics'[stdDev_CallCnt])
+			    ,ALLEXCEPT('Teams_Metrics', 'Teams_Metrics'[ROLE], 'Teams_Metrics'[DIVISION]
+			    )
+			 )
+			```
+		lineageTag: 422a252a-d4eb-4cc3-a8f9-8188c4b5ef42
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure Mean_CallCount_INDIC =
+			
+			CALCULATE(
+			    AVERAGE( 'Teams_Metrics'[Call Count])
+			    ,ALLEXCEPT('Teams_Metrics','Teams_Metrics'[USER], 'Teams_Metrics'[ROLE], 'Teams_Metrics'[DIVISION])
+			)
+		lineageTag: 6d926de2-ee40-4df7-bc5d-bf9f67e7c395
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure Mean_CallCount_ROLE =
+			
+			CALCULATE(
+			    AVERAGE( 'Teams_Metrics'[Call Count])
+			    ,ALLEXCEPT('Teams_Metrics', 'Teams_Metrics'[ROLE], 'Teams_Metrics'[DIVISION])
+			)
+		lineageTag: 19291980-7c77-49da-af14-fbec99e0c797
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column X
+		formatString: 0
+		lineageTag: cb82be51-79ba-41a9-a3e0-9393878edda6
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [X]
+
+		annotation SummarizationSetBy = Automatic
+
+	column z = ('Normal Distribution Table'[X]-'Teams_Metrics'[Mean_CallCount]/'Teams_Metrics'[stdDev_CallCnt])
+		lineageTag: ea74f578-36c3-4699-b818-fae2d6d36a8d
+		summarizeBy: sum
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	partition 'Normal Distribution Table' = calculated
+		mode: import
+		source =
+				
+				var minvalue = CALCULATE(FLOOR([_B_X-3a],1), ALLEXCEPT('Teams_Metrics', 'Teams_Metrics'[ROLE], 'Teams_Metrics'[DIVISION]))
+				VAR MAXVALUE = CALCULATE(CEILING([_B_X+3a],1), ALLEXCEPT('Teams_Metrics', 'Teams_Metrics'[ROLE], 'Teams_Metrics'[DIVISION]))
+				return SELECTCOLUMNS(CALENDAR(minvalue,MAXVALUE),"X",int([Date]))
+
+	annotation PBI_Id = 57afef593a744d4b8dc6bd423eae95ba
+

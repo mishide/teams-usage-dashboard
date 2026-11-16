@@ -1,0 +1,21 @@
+relationship 6c6513af-de47-496d-bbda-df9ce8039dc9
+	joinOnDateBehavior: datePartOnly
+	fromColumn: Teams_Metrics.'Report Refresh Date'
+	toColumn: LocalDateTable_eaa1745d-2688-4caf-9d1d-3f2391e76e3f.Date
+
+relationship e89eca34-4ea3-48f4-8ee1-c2f2c32e6025
+	joinOnDateBehavior: datePartOnly
+	fromColumn: Teams_Metrics.'Last Activity Date'
+	toColumn: LocalDateTable_7e11c56e-4f84-474b-944a-1724af82852b.Date
+
+relationship AutoDetected_f563c712-b03d-4de5-9378-d4a30b1321f1
+	crossFilteringBehavior: bothDirections
+	fromCardinality: one
+	fromColumn: Teams_Metrics.USER
+	toColumn: teamUserLookup.User
+
+relationship 5a2b1297-f34a-4ec4-8fca-b1c6030e416d
+	joinOnDateBehavior: datePartOnly
+	fromColumn: Teams_Metrics.start_date
+	toColumn: LocalDateTable_171eb3cd-3931-4f2e-ad6f-93a804c66e01.Date
+

@@ -1,0 +1,78 @@
+table teamUserLookup
+	lineageTag: be5ed3b0-6370-4eba-956d-4dd80456985f
+
+	column User_Principal_Name
+		dataType: string
+		lineageTag: 5feac4d9-a683-4309-84e2-1d837d53e922
+		summarizeBy: none
+		sourceColumn: User_Principal_Name
+
+		annotation SummarizationSetBy = Automatic
+
+	column ROLE
+		dataType: string
+		lineageTag: d36a37e6-cda6-4773-94d8-5fe7ea2cea2a
+		summarizeBy: none
+		sourceColumn: ROLE
+
+		annotation SummarizationSetBy = Automatic
+
+	column DIVISION
+		dataType: string
+		lineageTag: 63375d45-dedd-41b3-a936-329ce78c45d6
+		summarizeBy: none
+		sourceColumn: DIVISION
+
+		annotation SummarizationSetBy = Automatic
+
+	column LAST_NAME
+		dataType: string
+		lineageTag: 3695f425-b86c-480b-94af-e4887f6480b3
+		summarizeBy: none
+		sourceColumn: LAST_NAME
+
+		annotation SummarizationSetBy = Automatic
+
+	column TITLE
+		dataType: string
+		lineageTag: 36f6ffea-699d-4019-b90e-b2b545f54070
+		summarizeBy: none
+		sourceColumn: TITLE
+
+		annotation SummarizationSetBy = Automatic
+
+	column FIRST_INITIAL
+		dataType: string
+		lineageTag: 29996fda-03e5-4551-b775-40a0fc2b00b1
+		summarizeBy: none
+		sourceColumn: FIRST_INITIAL
+
+		annotation SummarizationSetBy = Automatic
+
+	column User
+		dataType: string
+		lineageTag: 5c5578b8-3720-4528-bd24-7268ccc8fab3
+		summarizeBy: none
+		sourceColumn: User
+
+		annotation SummarizationSetBy = Automatic
+
+	partition teamUserLookup = m
+		mode: import
+		source =
+				let
+				    Source = Csv.Document(
+				        File.Contents("C:\Portfolio\Data\teamUserLookup.csv"),
+				        [Delimiter=",", Columns=33, Encoding=1252, QuoteStyle=QuoteStyle.None]
+				    ),
+				    #"Imported CSV" = Source,
+				    #"Promoted Headers" = Table.PromoteHeaders(#"Imported CSV", [PromoteAllScalars=true]),
+				    #"Changed Type" = Table.TransformColumnTypes(#"Promoted Headers",{{"User_Principal_Name", type text}, {"ROLE", type text}, {"DIVISION", type text}, {"LAST_NAME", type text}, {"TITLE", type text}, {"FIRST_INITIAL", type text}, {"User", type text}}),
+				    #"Removed Columns" = Table.RemoveColumns(#"Changed Type",{"", "_1", "_2", "_3", "_4", "_5", "_6", "_7", "_8", "_9", "_10", "_11", "_12", "_13", "_14", "_15", "_16", "_17", "_18", "_19", "_20", "_21", "_22", "_23", "_24", "_25"})
+				in
+				    #"Removed Columns"
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

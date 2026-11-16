@@ -1,0 +1,107 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.14.0/schema.json",
+  "name": "5aa263b57ee690c143e3",
+  "position": {
+    "x": 8.6002239641657336,
+    "y": 0,
+    "z": 3000,
+    "height": 42.284434490481523,
+    "width": 1262.7995520716686,
+    "tabOrder": 7000
+  },
+  "visual": {
+    "visualType": "textbox",
+    "objects": {
+      "general": [
+        {
+          "properties": {
+            "paragraphs": [
+              {
+                "textRuns": [
+                  {
+                    "value": "TEAMS USAGE METRICS",
+                    "textStyle": {
+                      "fontWeight": "bold",
+                      "fontFamily": "Calibri",
+                      "fontSize": "10.5pt",
+                      "color": "#000000"
+                    }
+                  }
+                ],
+                "horizontalTextAlignment": "center"
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "Select filters on Division or Role to view Metrics and Mean for those groups.         Select an individual \"User\" to see where their mean falls within the group curve compared to the group mean.",
+                    "textStyle": {
+                      "fontFamily": "Calibri",
+                      "fontSize": "10.5pt",
+                      "color": "#000000"
+                    }
+                  }
+                ],
+                "horizontalTextAlignment": "center"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "visualContainerObjects": {
+      "padding": [
+        {
+          "properties": {
+            "top": {
+              "expr": {
+                "Literal": {
+                  "Value": "3D"
+                }
+              }
+            },
+            "bottom": {
+              "expr": {
+                "Literal": {
+                  "Value": "0D"
+                }
+              }
+            },
+            "left": {
+              "expr": {
+                "Literal": {
+                  "Value": "15D"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "background": [
+        {
+          "properties": {
+            "color": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "ThemeDataColor": {
+                      "ColorId": 0,
+                      "Percent": 0
+                    }
+                  }
+                }
+              }
+            },
+            "transparency": {
+              "expr": {
+                "Literal": {
+                  "Value": "3D"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "drillFilterOtherVisuals": true
+  }
+}
