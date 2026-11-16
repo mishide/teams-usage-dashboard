@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Teams Usage Metrics – Power BI dashboard recreation (synthetic data)</title>
+<style>
+  :root{
+    --navy:#18154C; --panel:#ffffff; --ink:#1b1b2f; --muted:#5a5a72; --rule:#dcdce6; --row:#f4f4f9;
+    --focus:#2575FA; --user:#A3151F;
+    --font: Calibri, Carlito, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  }
+  *{box-sizing:border-box}
+  html{background:var(--navy)}
+  body{margin:0;padding:10px;font-family:var(--font);color:var(--ink);background:var(--navy);min-height:100vh}
+  .wrap{max-width:1280px;margin:0 auto;display:grid;gap:8px}
+  .panel{background:var(--panel);border-radius:2px}
+  /* header */
+  .head{padding:10px 16px 12px;text-align:center}
+  .head h1{margin:0;font-size:1.05rem;letter-spacing:.01em}
+  .head p{margin:4px auto 0;font-size:.88rem;max-width:90ch;color:#222}
+  .controls{display:flex;flex-wrap:wrap;gap:10px 18px;justify-content:center;align-items:center;margin-top:10px}
+  .controls label{font-size:.85rem;font-weight:700;display:flex;gap:6px;align-items:center}
+  .controls select{font:inherit;font-size:.88rem;padding:4px 8px;border:1px solid #9a9ab0;border-radius:3px;background:#fff;color:var(--ink);min-width:9rem}
+  .controls button{font:inherit;font-size:.85rem;padding:4px 12px;border:1px solid var(--navy);background:var(--navy);color:#fff;border-radius:3px;cursor:pointer}
+  .controls button[disabled]{opacity:.35;cursor:default}
+  select:focus-visible,button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--focus);outline-offset:1px}
+  .status{margin-top:8px;font-size:.84rem;color:var(--muted)}
+  /* charts */
+  .charts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .chart{padding:8px 6px 6px;position:relative}
+  .chart h2{margin:0;text-align:center;font-size:.86rem}
+  .chart svg{display:block;width:100%;height:auto;touch-action:pan-y}
+  .chart .cap{margin:0;text-align:center;font-size:.78rem;color:var(--muted)}
+  .chart .stats{margin:2px 0 0;text-align:center;font-size:.8rem;min-height:2.4em}
+  .chart .stats b{font-weight:700}
+  .nodata{display:grid;place-items:center;height:190px;color:var(--muted);font-size:.88rem;text-align:center;padding:0 24px}
+  .tip{position:fixed;pointer-events:none;background:#16163a;color:#fff;font-size:.78rem;padding:5px 8px;border-radius:3px;z-index:20;white-space:nowrap;display:none}
+  /* matrix */
+  .matrix{padding:6px 8px 10px}
+  .matrix h2{margin:4px 0 6px;text-align:center;font-size:.95rem;font-weight:600}
+  .scroller{overflow:auto;max-height:430px;border-top:1px solid var(--rule)}
+  table{border-collapse:collapse;width:100%;min-width:820px;font-size:.88rem}
+  thead th{position:sticky;top:0;background:#fff;z-index:2;text-align:center;font-weight:400;color:#444;padding:7px 8px;border-bottom:1px solid var(--rule);white-space:nowrap}
+  thead th:first-child{text-align:left}
+  tbody th{font-weight:400;text-align:left;padding:3px 8px;white-space:nowrap;border-bottom:1px solid var(--rule);min-width:230px}
+  tbody td{padding:0;border-bottom:1px solid var(--rule);border-left:1px solid var(--rule);text-align:right;font-weight:700}
+  tbody td span{display:block;padding:3px 10px;background:linear-gradient(to right,var(--c) var(--w),transparent var(--w))}
+  tr.role th{text-transform:uppercase;letter-spacing:.01em}
+  tr.user th{padding-left:34px;color:#333}
+  tr.user{background:#fff}
+  tr.sel,tr.sel th{background:#fff6c9}
+  tr[tabindex]{cursor:pointer}
+  tr[tabindex]:hover th{background:var(--row)}
+  .exp{all:unset;display:inline-grid;place-items:center;width:16px;height:16px;margin-right:6px;border:1px solid #888;border-radius:2px;font-size:.8rem;line-height:1;cursor:pointer;color:#444;background:#fff}
+  .exp:focus-visible{outline:3px solid var(--focus)}
+  .hint{margin:8px 4px 0;font-size:.78rem;color:var(--muted);text-align:center}
+  /* footer */
+  .foot{padding:10px 16px;font-size:.8rem;color:#333}
+  .foot details{margin-top:6px}
+  .foot summary{cursor:pointer;font-weight:700}
+  .foot pre{margin:8px 0 0;padding:10px;background:var(--row);border-radius:3px;overflow:auto;font:12px/1.45 Consolas,"Cascadia Mono",monospace;color:#222}
+  @media (max-width:1000px){ .charts{grid-template-columns:1fr} }
+  @media (prefers-reduced-motion:no-preference){ tbody tr{transition:background .12s} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <section class="panel head" aria-label="Filters">
+    <h1>TEAMS USAGE METRICS</h1>
+    <p>Filter by Division or Role to see metrics and the mean for that group. Pick a user (or click a row in the table) to see where their value falls on the group curve compared with the group mean.</p>
+    <div class="controls">
+      <label>Division <select id="fDiv"></select></label>
+      <label>Role <select id="fRole"></select></label>
+      <label>User <select id="fUser"></select></label>
+      <button id="clear" type="button" disabled>Clear selection</button>
+    </div>
+    <div class="status" id="status" aria-live="polite"></div>
+  </section>
+
+  <section class="charts" aria-label="Distribution charts">
+    <article class="panel chart" id="c-scr"></article>
+    <article class="panel chart" id="c-mtg"></article>
+    <article class="panel chart" id="c-call"></article>
+  </section>
+
+  <section class="panel matrix" aria-label="Usage by role">
+    <h2 id="rangeTitle"></h2>
+    <div class="scroller">
+      <table>
+        <thead><tr id="thead"></tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <p class="hint">Role rows show per-user averages (Meeting Count is a total). Click a role to draw that role’s curve; expand it and click a user to mark that user on all three curves.</p>
+  </section>
+
+  <section class="panel foot">
+    <strong>Synthetic data.</strong> Every name, ID and number in this page is invented for demonstration. It is a hand-built HTML recreation of a Power BI report; the calculations mirror the report’s DAX.
+    <details>
+      <summary>How the curves are calculated</summary>
+<pre>Mean_ScreenShr  = CALCULATE( AVERAGE(Teams_Metrics[ScreenShare_hrs]),
+                    ALLEXCEPT(Teams_Metrics, Teams_Metrics[ROLE], Teams_Metrics[DIVISION]) )
+stdDev_ScreenShr = CALCULATE( STDEV.P(Teams_Metrics[ScreenShare_hrs]),
+                    ALLEXCEPT(Teams_Metrics, Teams_Metrics[ROLE], Teams_Metrics[DIVISION]) )
+
+X table  = integers from FLOOR(mean - 3*stdDev) to CEILING(mean + 3*stdDev)
+f(x)     = EXP( -(x - mean)^2 / (2 * stdDev^2) ) / ( SQRT(2*PI()) * stdDev )
+
+Mean_*_INDIC = AVERAGE(metric) for the selected user (same role and division context)</pre>
+    </details>
+  </section>
+</div>
+<div class="tip" id="tip" role="status"></div>
+
+<script>
+"use strict";
+const DATA = [{"u":"ALDRIDGE K","r":"ADMIN","d":"CLIENT SERVICES","scr":3.2122,"chat":357,"call":84,"mtg":18,"ota":6,"oto":1},{"u":"MERRIWEATHER E","r":"ADMIN","d":"CLIENT SERVICES","scr":8.4064,"chat":182,"call":9,"mtg":3,"ota":1,"oto":0},{"u":"THACKERAY M","r":"ADMIN","d":"CLIENT SERVICES","scr":0.9508,"chat":352,"call":10,"mtg":4,"ota":1,"oto":1},{"u":"KETTERING B","r":"ADMIN","d":"CLIENT SERVICES","scr":5.78,"chat":704,"call":22,"mtg":12,"ota":4,"oto":0},{"u":"ZAMORA C","r":"ADMIN","d":"CLIENT SERVICES","scr":3.3181,"chat":105,"call":13,"mtg":1,"ota":0,"oto":1},{"u":"LOMBARDI D","r":"INSIDE SALES","d":"CLIENT SERVICES","scr":24.3206,"chat":268,"call":105,"mtg":21,"ota":8,"oto":8},{"u":"QUILLAN L","r":"INSIDE SALES","d":"CLIENT SERVICES","scr":2.4206,"chat":66,"call":5,"mtg":19,"ota":9,"oto":2},{"u":"GALLOWAY T","r":"SALES EXECUTIVE","d":"CLIENT SERVICES","scr":4.6372,"chat":72,"call":23,"mtg":75,"ota":16,"oto":1},{"u":"ABERNATHY B","r":"SALES EXECUTIVE","d":"CLIENT SERVICES","scr":5.2567,"chat":29,"call":16,"mtg":8,"ota":2,"oto":4},{"u":"HARGROVE R","r":"SALES EXECUTIVE","d":"CLIENT SERVICES","scr":3.2244,"chat":42,"call":18,"mtg":45,"ota":12,"oto":2},{"u":"GARRITY G","r":"SALES EXECUTIVE","d":"CLIENT SERVICES","scr":21.5822,"chat":18,"call":61,"mtg":33,"ota":9,"oto":1},{"u":"ELLSWORTH B","r":"SVP","d":"CLIENT SERVICES","scr":5.1164,"chat":24,"call":6,"mtg":21,"ota":12,"oto":0},{"u":"VALDEZ C","r":"TECHNOLOGY","d":"CLIENT SERVICES","scr":13.8886,"chat":46,"call":10,"mtg":20,"ota":12,"oto":10},{"u":"WHITCOMBE N","r":"TECHNOLOGY","d":"CLIENT SERVICES","scr":7.8375,"chat":46,"call":7,"mtg":79,"ota":58,"oto":40},{"u":"LINDQVIST N","r":"TECHNOLOGY","d":"CLIENT SERVICES","scr":17.1253,"chat":62,"call":18,"mtg":21,"ota":16,"oto":5},{"u":"CASTELLAN C","r":"VP","d":"CLIENT SERVICES","scr":10.6056,"chat":147,"call":24,"mtg":7,"ota":2,"oto":2},{"u":"ZIELINSKI H","r":"ADMIN","d":"PARTNER SALES","scr":1.8753,"chat":232,"call":12,"mtg":5,"ota":2,"oto":0},{"u":"ENGSTROM C","r":"ADMIN","d":"PARTNER SALES","scr":13.6017,"chat":127,"call":4,"mtg":7,"ota":2,"oto":0},{"u":"OYELARAN S","r":"ADMIN","d":"PARTNER SALES","scr":5.3742,"chat":216,"call":14,"mtg":20,"ota":7,"oto":0},{"u":"KILGORE N","r":"INSIDE SALES","d":"PARTNER SALES","scr":2.8286,"chat":156,"call":94,"mtg":11,"ota":5,"oto":2},{"u":"PRESCOTT B","r":"INSIDE SALES","d":"PARTNER SALES","scr":5.2689,"chat":173,"call":15,"mtg":16,"ota":8,"oto":2},{"u":"HOLLIS T","r":"INSIDE SALES","d":"PARTNER SALES","scr":6.5372,"chat":65,"call":97,"mtg":4,"ota":2,"oto":1},{"u":"DELACROIX D","r":"INSIDE SALES","d":"PARTNER SALES","scr":3.9569,"chat":212,"call":46,"mtg":7,"ota":3,"oto":6},{"u":"UNDERHILL H","r":"INSIDE SALES","d":"PARTNER SALES","scr":3.8703,"chat":77,"call":7,"mtg":24,"ota":13,"oto":1},{"u":"OKONKWO T","r":"SALES EXECUTIVE","d":"PARTNER SALES","scr":7.4894,"chat":16,"call":20,"mtg":45,"ota":12,"oto":1},{"u":"NOVAK B","r":"SALES EXECUTIVE","d":"PARTNER SALES","scr":17.3486,"chat":159,"call":74,"mtg":101,"ota":25,"oto":1},{"u":"YOSHIDA T","r":"SALES EXECUTIVE","d":"PARTNER SALES","scr":8.4914,"chat":30,"call":72,"mtg":73,"ota":14,"oto":3},{"u":"CARDENAS T","r":"SALES EXECUTIVE","d":"PARTNER SALES","scr":4.9942,"chat":62,"call":503,"mtg":9,"ota":2,"oto":2},{"u":"MONTROSE M","r":"SALES EXECUTIVE","d":"PARTNER SALES","scr":6.58,"chat":46,"call":10,"mtg":6,"ota":1,"oto":2},{"u":"TENNYSON B","r":"SALES EXECUTIVE","d":"PARTNER SALES","scr":5.5228,"chat":32,"call":136,"mtg":43,"ota":11,"oto":1},{"u":"BRIGHTWELL H","r":"SALES EXECUTIVE","d":"PARTNER SALES","scr":8.4575,"chat":30,"call":44,"mtg":10,"ota":3,"oto":2},{"u":"JESSUP B","r":"SALES EXECUTIVE","d":"PARTNER SALES","scr":6.3447,"chat":84,"call":48,"mtg":22,"ota":5,"oto":1},{"u":"DUNMORE S","r":"SALES EXECUTIVE","d":"PARTNER SALES","scr":6.7136,"chat":36,"call":9,"mtg":44,"ota":12,"oto":3},{"u":"MACKENZIE E","r":"SALES EXECUTIVE","d":"PARTNER SALES","scr":2.9897,"chat":42,"call":29,"mtg":6,"ota":1,"oto":0},{"u":"ULRICH J","r":"SALES EXECUTIVE","d":"PARTNER SALES","scr":4.5903,"chat":49,"call":115,"mtg":4,"ota":1,"oto":1},{"u":"WINSLOW N","r":"SALES EXECUTIVE","d":"PARTNER SALES","scr":29.0672,"chat":137,"call":45,"mtg":28,"ota":7,"oto":1},{"u":"NAKAMURA E","r":"SALES EXECUTIVE","d":"PARTNER SALES","scr":5.0817,"chat":88,"call":54,"mtg":23,"ota":5,"oto":0},{"u":"RADCLIFFE S","r":"SALES EXECUTIVE","d":"PARTNER SALES","scr":3.8133,"chat":67,"call":35,"mtg":18,"ota":4,"oto":6},{"u":"DRAYCOTT D","r":"SALES EXECUTIVE","d":"PARTNER SALES","scr":10.8272,"chat":29,"call":185,"mtg":23,"ota":6,"oto":5},{"u":"ROSENTHAL T","r":"SALES EXECUTIVE","d":"PARTNER SALES","scr":24.1558,"chat":14,"call":48,"mtg":11,"ota":3,"oto":1},{"u":"SUTHERLAND J","r":"SALES EXECUTIVE","d":"PARTNER SALES","scr":2.825,"chat":112,"call":4,"mtg":7,"ota":2,"oto":3},{"u":"ISHIKAWA S","r":"SALES EXECUTIVE","d":"PARTNER SALES","scr":7.19,"chat":114,"call":22,"mtg":20,"ota":5,"oto":2},{"u":"KOWALCZYK F","r":"SVP","d":"PARTNER SALES","scr":14.2564,"chat":27,"call":8,"mtg":17,"ota":10,"oto":0},{"u":"FENWICK D","r":"TECHNOLOGY","d":"PARTNER SALES","scr":34.6722,"chat":14,"call":15,"mtg":62,"ota":43,"oto":5},{"u":"INGERSOLL T","r":"VP","d":"PARTNER SALES","scr":3.2767,"chat":47,"call":61,"mtg":22,"ota":7,"oto":2},{"u":"HALVORSEN T","r":"ADMIN","d":"ASSET RECOVERY","scr":1.2342,"chat":66,"call":9,"mtg":13,"ota":5,"oto":0},{"u":"IVERSON G","r":"SALES EXECUTIVE","d":"ASSET RECOVERY","scr":5.2333,"chat":42,"call":5,"mtg":10,"ota":2,"oto":0},{"u":"FONTAINE L","r":"SALES EXECUTIVE","d":"ASSET RECOVERY","scr":2.2442,"chat":78,"call":1,"mtg":6,"ota":2,"oto":2},{"u":"PEMBERTON D","r":"SALES EXECUTIVE","d":"ASSET RECOVERY","scr":14.5889,"chat":96,"call":27,"mtg":34,"ota":9,"oto":1},{"u":"EASTWOOD S","r":"SALES EXECUTIVE","d":"ASSET RECOVERY","scr":8.2606,"chat":101,"call":227,"mtg":21,"ota":5,"oto":1},{"u":"NORTHCOTT C","r":"SALES EXECUTIVE","d":"ASSET RECOVERY","scr":8.8697,"chat":109,"call":52,"mtg":31,"ota":6,"oto":0},{"u":"XIONG T","r":"SVP","d":"ASSET RECOVERY","scr":7.5153,"chat":8,"call":45,"mtg":11,"ota":7,"oto":1},{"u":"YARBOROUGH B","r":"VP","d":"ASSET RECOVERY","scr":3.6397,"chat":61,"call":34,"mtg":70,"ota":19,"oto":2},{"u":"BEAUMONT W","r":"ADMIN","d":"PROCUREMENT","scr":3.2083,"chat":115,"call":56,"mtg":6,"ota":2,"oto":0},{"u":"ASHDOWN G","r":"ADMIN","d":"PROCUREMENT","scr":4.6758,"chat":162,"call":31,"mtg":5,"ota":2,"oto":0},{"u":"FAIRBANKS P","r":"SVP","d":"PROCUREMENT","scr":5.8239,"chat":160,"call":15,"mtg":12,"ota":6,"oto":0},{"u":"SANDOVAL S","r":"VP","d":"PROCUREMENT","scr":21.7981,"chat":216,"call":55,"mtg":46,"ota":12,"oto":3},{"u":"CALLOWAY N","r":"VP","d":"PROCUREMENT","scr":4.2333,"chat":31,"call":61,"mtg":10,"ota":3,"oto":10}];
+const RANGE = "6/29/2025-7/29/2025";
+
+/* ---------- configuration ---------- */
+const CHARTS = [
+  {id:"c-scr", key:"scr",  title:"SCREEN SHARE HOURS (30 days)", cap:"Normal distribution of screen share hours", unit:"hrs", dec:1,
+   line:"#0A883A", fill:"#50BA1C", op:.16, ink:"#0A6B2E"},
+  {id:"c-mtg", key:"mtg",  title:"MEETING COUNT (30 days)",      cap:"Normal distribution of meeting count",      unit:"meetings", dec:0,
+   line:"#2575FA", fill:"#2575FA", op:.16, ink:"#1D4FB8"},
+  {id:"c-call",key:"call", title:"CALL COUNT (30 days)",         cap:"Normal distribution of call count",         unit:"calls", dec:0,
+   line:"#1FC3C8", fill:"#BBF1F3", op:.6,  ink:"#0E7478"}
+];
+const COLS = [
+  {key:"scr",  label:"Screen Share (hrs)",        agg:"avg", dec:1, color:"#CDFAB7"},
+  {key:"chat", label:"Chats (avg per user)",      agg:"avg", dec:1, color:"#B6A8CC"},
+  {key:"mtg",  label:"Meeting Count",             agg:"sum", dec:0, color:"#BBF1F3"},
+  {key:"ota",  label:"1-Time Meetings Attended",  agg:"avg", dec:1, color:"#BBF1F3"},
+  {key:"oto",  label:"1-Time Meetings Organized", agg:"avg", dec:1, color:"#BBF1F3"},
+  {key:"call", label:"Calls (avg per user)",      agg:"avg", dec:1, color:"#C2D6F7"}
+];
+
+/* ---------- state ---------- */
+const state = {div:"", role:"", focusRole:"", focusUser:"", expanded:new Set()};
+
+/* ---------- helpers ---------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt = (v, d) => v.toLocaleString("en-US",{minimumFractionDigits:d, maximumFractionDigits:d});
+const mean = a => a.reduce((s,v)=>s+v,0)/a.length;
+const sdp  = a => { const m = mean(a); return Math.sqrt(a.reduce((s,v)=>s+(v-m)*(v-m),0)/a.length); }; // STDEV.P
+const pdf  = (x,m,s) => Math.exp(-((x-m)*(x-m))/(2*s*s)) / (Math.sqrt(2*Math.PI)*s);
+function niceStep(range, target){
+  const raw = range/target, p = Math.pow(10, Math.floor(Math.log10(raw))), f = raw/p;
+  return (f<1.5?1:f<3.5?2:f<7.5?5:10)*p;
+}
+const uniq = a => [...new Set(a)].sort((x,y)=>x.localeCompare(y));
+
+/* ---------- filtering ---------- */
+const pageRows  = () => DATA.filter(r => (!state.div || r.d===state.div) && (!state.role || r.r===state.role));
+const groupRows = () => pageRows().filter(r => !state.focusRole || r.r===state.focusRole);
+
+/* ---------- controls ---------- */
+function fillSelect(el, first, values, cur){
+  el.innerHTML = `<option value="">${first}</option>` + values.map(v=>`<option value="${esc(v)}"${v===cur?" selected":""}>${esc(v)}</option>`).join("");
+}
+function syncControls(){
+  fillSelect($("#fDiv"), "All divisions", uniq(DATA.map(r=>r.d)), state.div);
+  fillSelect($("#fRole"), "All roles", uniq(DATA.map(r=>r.r)), state.role);
+  fillSelect($("#fUser"), "None (group view)", uniq(pageRows().map(r=>r.u)), state.focusUser);
+  $("#clear").disabled = !(state.focusUser || state.focusRole);
+}
+$("#fDiv").addEventListener("change", e => { state.div=e.target.value; dropStaleFocus(); render(); });
+$("#fRole").addEventListener("change", e => { state.role=e.target.value; dropStaleFocus(); render(); });
+$("#fUser").addEventListener("change", e => {
+  state.focusUser = e.target.value;
+  const row = DATA.find(r=>r.u===state.focusUser);
+  state.focusRole = row ? row.r : "";
+  render();
+});
+$("#clear").addEventListener("click", () => { state.focusUser=""; state.focusRole=""; render(); });
+function dropStaleFocus(){
+  const rows = pageRows();
+  if (state.focusUser && !rows.some(r=>r.u===state.focusUser)) state.focusUser="";
+  if (state.focusRole && !rows.some(r=>r.r===state.focusRole)) { state.focusRole=""; state.focusUser=""; }
+}
+
+/* ---------- charts ---------- */
+const W=420, H=200, X0=12, X1=W-46, Y0=26, Y1=H-28;
+const tipEl = $("#tip");
+
+function drawChart(cfg, rows){
+  const host = $("#"+cfg.id);
+  const head = `<h2 style="color:${cfg.ink}">${cfg.title}</h2>`;
+  const vals = rows.map(r=>r[cfg.key]);
+  if (vals.length < 2 || sdp(vals) === 0){
+    host.innerHTML = head + `<div class="nodata">${vals.length===0 ? "No users match these filters." :
+      "A distribution needs at least two users with different values. Widen the Division or Role filter."}</div>
+      <p class="cap">${cfg.cap}</p><p class="stats"></p>`;
+    return;
+  }
+  const m = mean(vals), s = sdp(vals);
+  const xmin = Math.floor(m-3*s), xmax = Math.ceil(m+3*s);
+  const xs = []; for (let x=xmin; x<=xmax; x++) xs.push(x);
+  const ys = xs.map(x=>pdf(x,m,s));
+  const ymaxData = Math.max(...ys, pdf(m,m,s));
+  const ystep = niceStep(ymaxData*1.1, 3);
+  const ymax = Math.ceil(ymaxData*1.08/ystep)*ystep;
+  const sx = x => X0 + (x-xmin)/(xmax-xmin)*(X1-X0);
+  const sy = p => Y1 - p/ymax*(Y1-Y0);
+
+  // grid + right axis
+  let g = "";
+  const ydec = Math.max(0, -Math.floor(Math.log10(ystep)+1e-9));
+  for (let t=0; t<=ymax+ystep*.001; t+=ystep){
+    g += `<line x1="${X0}" x2="${X1}" y1="${sy(t)}" y2="${sy(t)}" stroke="#e6e6ee" stroke-width="1"/>`;
+    g += `<text x="${X1+6}" y="${sy(t)+3.5}" font-size="10" fill="#555">${t.toFixed(ydec)}</text>`;
+  }
+  // x axis ticks
+  const xstep = niceStep(xmax-xmin, 5);
+  let xt = "";
+  for (let t=Math.ceil(xmin/xstep)*xstep; t<=xmax+1e-9; t+=xstep){
+    xt += `<line x1="${sx(t)}" x2="${sx(t)}" y1="${Y1}" y2="${Y1+4}" stroke="#777"/>`;
+    xt += `<text x="${sx(t)}" y="${Y1+16}" font-size="10.5" font-weight="700" text-anchor="middle" fill="#222">${fmt(Math.round(t*100)/100,0)}</text>`;
+  }
+  // area + line
+  const pts = xs.map((x,i)=>`${sx(x).toFixed(1)},${sy(ys[i]).toFixed(1)}`);
+  const area = `M${sx(xmin)},${Y1} L${pts.join(" L")} L${sx(xmax)},${Y1} Z`;
+  const line = `M${pts.join(" L")}`;
+
+  // sigma markers
+  let marks = "";
+  [-2,-1,1,2].forEach(k=>{
+    const xv = m + k*s, px = sx(xv), py = sy(pdf(xv,m,s));
+    const lab = fmt(Math.round(xv), 0);
+    marks += `<circle cx="${px}" cy="${py}" r="2.2" fill="${cfg.line}"/>`;
+    marks += `<text x="${px + (k<0?-5:5)}" y="${py-5}" font-size="10" text-anchor="${k<0?"end":"start"}" fill="${cfg.ink}">${lab}</text>`;
+  });
+
+  // mean + selected user
+  const meanPx = sx(m);
+  const meanLabAnchorEnd = meanPx - 74 > X0;
+  let ref = `<line x1="${meanPx}" x2="${meanPx}" y1="${Y0-6}" y2="${Y1}" stroke="#333" stroke-width="1" stroke-dasharray="1 3"/>`;
+  ref += `<text x="${meanPx + (meanLabAnchorEnd?-5:5)}" y="${Y0-9}" font-size="11" fill="#111" text-anchor="${meanLabAnchorEnd?"end":"start"}">MEAN: ${fmt(m,cfg.dec)}</text>`;
+
+  const urow = state.focusUser ? rows.find(r=>r.u===state.focusUser) : null;
+  let statsHtml = `Group mean <b>${fmt(m,cfg.dec)}</b> · σ <b>${fmt(s,cfg.dec)}</b> · <b>${vals.length}</b> users`;
+  if (urow){
+    const uv = urow[cfg.key], z = (uv-m)/s;
+    const clamped = Math.min(Math.max(uv, xmin), xmax), upx = sx(clamped);
+    const beyond = uv>xmax ? " ▶" : uv<xmin ? "◀ " : "";
+    ref += `<line x1="${upx}" x2="${upx}" y1="${Y0-6}" y2="${Y1}" stroke="var(--user)" stroke-width="2.2" stroke-dasharray="4 2.5"/>`;
+    ref += `<text x="${upx + (upx>X1-40?-5:5)}" y="${Y0+8}" font-size="10.5" font-weight="700" fill="var(--user)" text-anchor="${upx>X1-40?"end":"start"}">${uv<xmin?"◀ ":""}${fmt(uv,cfg.dec)}${uv>xmax?" ▶":""}</text>`;
+    ref += `<text x="${X0}" y="${Y0-9}" font-size="11" fill="var(--user)">SELECTED USER: ${fmt(uv,cfg.dec)}</text>`;
+    const side = Math.abs(z)<0.05 ? "right at the group mean" : (z>0 ? "above the group mean" : "below the group mean");
+    statsHtml += `<br><b style="color:var(--user)">${esc(urow.u)}</b>: ${fmt(uv,cfg.dec)} ${cfg.unit} (${z>=0?"+":""}${z.toFixed(1)}σ, ${side})`;
+  } else {
+    ref += `<text x="${X0}" y="${Y0-9}" font-size="11" fill="#777">SELECTED USER: none</text>`;
+  }
+
+  host.innerHTML = head +
+    `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(cfg.cap)}; group mean ${fmt(m,cfg.dec)}, standard deviation ${fmt(s,cfg.dec)}">
+       ${g}
+       <path d="${area}" fill="${cfg.fill}" fill-opacity="${cfg.op}"/>
+       <path d="${line}" fill="none" stroke="${cfg.line}" stroke-width="1.6" stroke-linejoin="round"/>
+       <line x1="${X0}" x2="${X1}" y1="${Y1}" y2="${Y1}" stroke="#777"/>
+       ${xt}${marks}${ref}
+       <line class="xh" y1="${Y0-6}" y2="${Y1}" stroke="#333" stroke-width="1" visibility="hidden"/>
+       <rect class="hit" x="${X0}" y="${Y0-6}" width="${X1-X0}" height="${Y1-Y0+6}" fill="transparent"/>
+     </svg>
+     <p class="cap">${cfg.cap}</p><p class="stats">${statsHtml}</p>`;
+
+  // hover tooltip
+  const svg = host.querySelector("svg"), hit = svg.querySelector(".hit"), xh = svg.querySelector(".xh");
+  const move = ev => {
+    const r = svg.getBoundingClientRect();
+    const px = (ev.clientX - r.left) / r.width * W;
+    let xv = Math.round(xmin + (px-X0)/(X1-X0)*(xmax-xmin));
+    xv = Math.min(xmax, Math.max(xmin, xv));
+    xh.setAttribute("x1", sx(xv)); xh.setAttribute("x2", sx(xv)); xh.setAttribute("visibility","visible");
+    const z = (xv-m)/s;
+    tipEl.textContent = `X = ${fmt(xv,0)} · f(x) = ${pdf(xv,m,s).toFixed(4)} · z = ${z>=0?"+":""}${z.toFixed(2)}`;
+    tipEl.style.display = "block";
+    tipEl.style.left = Math.min(ev.clientX+12, innerWidth-tipEl.offsetWidth-8)+"px";
+    tipEl.style.top  = (ev.clientY-34)+"px";
+  };
+  const leave = () => { xh.setAttribute("visibility","hidden"); tipEl.style.display="none"; };
+  hit.addEventListener("pointermove", move);
+  hit.addEventListener("pointerleave", leave);
+  hit.addEventListener("pointerdown", move);
+}
+
+/* ---------- matrix ---------- */
+function buildMatrix(){
+  $("#thead").innerHTML = `<th scope="col">Role</th>` + COLS.map(c=>`<th scope="col">${c.label}</th>`).join("");
+  const rows = pageRows();
+  const roles = uniq(rows.map(r=>r.r));
+  // per-column bar scale across everything currently visible
+  const cellVal = (list, c) => c.agg==="sum" ? list.reduce((s,r)=>s+r[c.key],0) : mean(list.map(r=>r[c.key]));
+  const visible = [];
+  roles.forEach(role => {
+    const list = rows.filter(r=>r.r===role);
+    visible.push({kind:"role", role, list});
+    if (state.expanded.has(role)) list.slice().sort((a,b)=>a.u.localeCompare(b.u)).forEach(u=>visible.push({kind:"user", role, list:[u], u:u.u}));
+  });
+  const maxFor = kind => COLS.map(c => Math.max(1e-9, ...visible.filter(v=>v.kind===kind).map(v=>cellVal(v.list,c))));
+  const maxes = {role:maxFor("role"), user:maxFor("user")};
+  if (!visible.length){ $("#tbody").innerHTML = `<tr><td colspan="${COLS.length+1}" style="text-align:center;padding:18px;font-weight:400;color:#555">No users match these filters.</td></tr>`; return; }
+
+  $("#tbody").innerHTML = visible.map(v=>{
+    const cells = COLS.map((c,i)=>{
+      const val = cellVal(v.list,c);
+      return `<td><span style="--c:${c.color};--w:${(val/maxes[v.kind][i]*100).toFixed(1)}%">${fmt(val,c.dec)}</span></td>`;
+    }).join("");
+    if (v.kind==="role"){
+      const open = state.expanded.has(v.role);
+      const sel = state.focusRole===v.role && !state.focusUser;
+      return `<tr class="role${sel?" sel":""}" tabindex="0" data-role="${esc(v.role)}" aria-label="${esc(v.role)}: select role">
+        <th scope="row"><button class="exp" type="button" data-exp="${esc(v.role)}" aria-expanded="${open}" aria-label="${open?"Collapse":"Expand"} ${esc(v.role)}">${open?"−":"+"}</button>${esc(v.role)}</th>${cells}</tr>`;
+    }
+    const sel = state.focusUser===v.u;
+    return `<tr class="user${sel?" sel":""}" tabindex="0" data-user="${esc(v.u)}" data-role="${esc(v.role)}" aria-label="${esc(v.u)}: select user"><th scope="row">${esc(v.u)}</th>${cells}</tr>`;
+  }).join("");
+}
+$("#tbody").addEventListener("click", e => {
+  const exp = e.target.closest("[data-exp]");
+  if (exp){ const r=exp.dataset.exp; state.expanded.has(r)?state.expanded.delete(r):state.expanded.add(r); buildMatrix(); return; }
+  const row = e.target.closest("tr[tabindex]"); if (!row) return;
+  pick(row);
+});
+$("#tbody").addEventListener("keydown", e => {
+  if ((e.key==="Enter" || e.key===" ") && e.target.matches("tr[tabindex]")){ e.preventDefault(); pick(e.target); }
+});
+function pick(row){
+  if (row.dataset.user){
+    const same = state.focusUser===row.dataset.user;
+    state.focusUser = same ? "" : row.dataset.user;
+    state.focusRole = same ? "" : row.dataset.role;
+  } else {
+    const same = state.focusRole===row.dataset.role && !state.focusUser;
+    state.focusUser = ""; state.focusRole = same ? "" : row.dataset.role;
+  }
+  render();
+}
+
+/* ---------- render ---------- */
+function render(){
+  syncControls();
+  const g = groupRows();
+  const roleTxt = state.focusRole || state.role || "all roles";
+  const divTxt  = state.div || "all divisions";
+  $("#status").textContent = `Group: ${roleTxt.toLowerCase()} · ${divTxt.toLowerCase()} · ${g.length} user${g.length===1?"":"s"}` +
+    (state.focusUser ? ` · selected user: ${state.focusUser}` : "");
+  CHARTS.forEach(c => drawChart(c, g));
+  buildMatrix();
+}
+$("#rangeTitle").textContent = "Report date range: " + RANGE.replace("-", " – ");
+render();
+</script>
+</body>
+</html>
